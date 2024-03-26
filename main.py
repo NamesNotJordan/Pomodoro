@@ -11,33 +11,48 @@ WORK_MIN = 25
 SHORT_BREAK_MIN = 5
 LONG_BREAK_MIN = 20
 
+# Globals
+reps = 0
+timer = None
 # ---------------------------- TIMER RESET ------------------------------- # 
 
 
 def reset_timer():
+    window.after_cancel(timer)
+    global reps
+    reps = 0
+    work_status.config(text="")
     canvas.itemconfig(timer_text, text="00:00")
+    check_marks.config(text="✔")
 
 # ---------------------------- TIMER MECHANISM ------------------------------- # 
 
 
 def start_timer():
-    timers = [WORK_MIN, SHORT_BREAK_MIN, WORK_MIN, SHORT_BREAK_MIN, WORK_MIN]
-    work_break_label.config(text="Work")
+    global reps
+    reps += 1
+    work_secs = WORK_MIN * 60
+    short_break_secs = SHORT_BREAK_MIN *60
+    long_break_secs = LONG_BREAK_MIN * 60
 
-    for timer in timers:
-        update_work_break(timer)
-        count = timer * 60
-        count_down(count)
+    if reps == 8:
+        update_working(False)
+        count_down(long_break_secs)
+    elif reps % 2 == 0:
+        update_working(False)
+        count_down(short_break_secs)
+    else:
+        update_working(True)
+        count_down(work_secs)
 
 
-def update_work_break(duration):
+def update_working(working):
     new_text = ""
-    if duration == WORK_MIN:
+    if working:
         new_text = "Working"
-    elif duration == SHORT_BREAK_MIN | duration == LONG_BREAK_MIN:
+    else:
         new_text = "On Break"
-
-    work_break_label.config(text=new_text)
+    work_status.config(text=new_text)
 # ---------------------------- COUNTDOWN MECHANISM ------------------------------- # 
 
 
@@ -56,9 +71,14 @@ def count_down(count):
     canvas.itemconfig(timer_text, text=f"{count_minute}:{count_seconds}")
 
     if count > 0:
-        window.after(1000, count_down, count-1)
-    if count == 0:
-        canvas.itemconfig(timer_text, text="Time's Up")
+        global timer
+        timer = window.after(1000, count_down, count-1)
+    else:
+        start_timer()
+        checks = ""
+        for i in range(math.floor(reps/2)):
+            checks += "✔"
+        check_marks.config(text=checks)
 # ---------------------------- UI SETUP ------------------------------- #
 
 
@@ -69,8 +89,8 @@ window.config(padx=100, pady=50, bg=YELLOW)
 heading_label = Label(text="Timer", fg=GREEN, font=(FONT_NAME, 40, "bold"), bg=YELLOW)
 heading_label.grid(column=1, row= 0)
 
-work_break_label = Label(text="", fg=GREEN, font=(FONT_NAME, 30, "bold"), bg=YELLOW)
-work_break_label.grid(column=1, row=1)
+work_status = Label(text="", fg=GREEN, font=(FONT_NAME, 30, "bold"), bg=YELLOW)
+work_status.grid(column=1, row=1)
 
 canvas = Canvas(width=200, height=223, bg=YELLOW, highlightthickness=0)
 tomato_image = PhotoImage(file="tomato.png")
